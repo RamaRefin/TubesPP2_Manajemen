@@ -2,6 +2,7 @@ package org.example.view;
 
 import com.toedter.calendar.JDateChooser;
 import org.example.controller.UserController;
+import org.example.model.DatabaseConnection;
 import org.example.model.User;
 
 import javax.imageio.ImageIO;
@@ -13,8 +14,13 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
 
 public class EditProfileView extends JFrame {
     private JTextField addressField;
@@ -30,11 +36,18 @@ public class EditProfileView extends JFrame {
     private static final Color PRIMARY_GREEN = new Color(34, 139, 34);
     private static final Color LIGHT_GREEN = new Color(144, 238, 144, 50);
     private static final Color DISABLED_BG = new Color(240, 240, 240);
+    private String originalUsername;
+    private String originalAddress;
+    private String originalDateOfBirth;
+    private String originalProfilePicturePath;
 
-    public EditProfileView() {
+
+    public EditProfileView(String email) {
+        this.userEmail = email;
         initializeFrame();
         JPanel mainPanel = createMainPanel();
         add(mainPanel);
+        loadUserProfileData(email); // Load data here
         pack();
     }
 
@@ -221,6 +234,7 @@ public class EditProfileView extends JFrame {
         }
     }
 
+
     private void handleImageSelection() {
         JFileChooser fileChooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
@@ -250,17 +264,31 @@ public class EditProfileView extends JFrame {
         if (selectedDate != null) {
             dob = new SimpleDateFormat("yyyy-MM-dd").format(selectedDate);
         }
+        System.out.println("Profile Picture Path: " + profilePicturePath);
 
-        User user = new User("", "", userEmail, "", true, profilePicturePath, address, dob);
-        UserController userController = new UserController();
 
-        if (userController.updateUser(user)) {
-            showSuccessMessage("Profile successfully updated!");
-            dispose();
+        boolean isChanged = false;
+        if(!address.equals(originalAddress) || (dob!=null && !dob.equals(originalDateOfBirth)) || (profilePicturePath != null && !profilePicturePath.equals(originalProfilePicturePath) ) ){
+            isChanged = true;
+        }
+
+        if (isChanged) {
+            User user = new User(usernameField.getText(),"",userEmail,"",true,profilePicturePath, address, dob);
+            UserController userController = new UserController();
+
+            if (userController.updateUser(user)) {
+                showSuccessMessage("Profile successfully updated!");
+                dispose();
+            } else {
+                showErrorMessage("Failed to update profile. Please try again.");
+            }
+
         } else {
-            showErrorMessage("Failed to update profile. Please try again.");
+            showSuccessMessage("No changes detected");
+            dispose();
         }
     }
+
 
     private void showSuccessMessage(String message) {
         JOptionPane.showMessageDialog(this, message, "Success",
@@ -272,18 +300,62 @@ public class EditProfileView extends JFrame {
                 JOptionPane.ERROR_MESSAGE);
     }
 
-    // Add method to set username from database
-    public void setUsername(String username) {
-        if (usernameField != null) {
-            usernameField.setText(username);
-        }
-    }
-
     public void setEmail(String email) {
         this.userEmail = email;
     }
 
+
     public void display() {
         setVisible(true);
+    }
+
+    private void loadUserProfileData(String email) {
+        String query = "SELECT username, address, date_of_birth, profile_picture FROM users WHERE email = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String username = rs.getString("username");
+                String address = rs.getString("address");
+                java.sql.Date dob = rs.getDate("date_of_birth");
+                String profilePicture = rs.getString("profile_picture");
+
+
+                usernameField.setText(username);
+                addressField.setText(address);
+                originalUsername = username;
+                originalAddress = address;
+                originalProfilePicturePath = profilePicture;
+
+                if (dob != null) {
+                    Date date = new Date(dob.getTime());
+                    dateOfBirthField.setDate(date);
+                    originalDateOfBirth = new SimpleDateFormat("yyyy-MM-dd").format(date);
+                }
+                if (profilePicture != null){
+                    profilePicturePath = profilePicture;
+                    try {
+                        File imageFile = new File(profilePicture);
+                        if(imageFile.exists()){
+                            BufferedImage image = ImageIO.read(imageFile);
+                            ImageIcon icon = new ImageIcon(
+                                    image.getScaledInstance(PREVIEW_SIZE, PREVIEW_SIZE, Image.SCALE_SMOOTH));
+                            imagePreview.setIcon(icon);
+                        } else{
+                            loadDefaultImage();
+                        }
+
+                    }catch (IOException ex) {
+                        ex.printStackTrace();
+                        loadDefaultImage();
+                    }
+                }
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading user data", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

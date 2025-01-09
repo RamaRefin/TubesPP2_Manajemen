@@ -57,19 +57,18 @@ public class ProfileView extends JFrame {
         mainPanel.add(categoryButton, gbc);
 
         editProfileButton.addActionListener(e -> {
-            EditProfileView editProfileView = new EditProfileView(); // Kirim email ke konstruktor
+            EditProfileView editProfileView = new EditProfileView(userEmail); // Send email to constructor
             editProfileView.display();
         });
 
-        changePasswordButton.addActionListener(e -> JOptionPane.showMessageDialog(ProfileView.this, "Change Password clicked!"));
+        changePasswordButton.addActionListener(e -> {
+            ChangePasswordView changePasswordView = new ChangePasswordView(userEmail);
+            changePasswordView.display();
+        });
 
         categoryButton.addActionListener(e -> JOptionPane.showMessageDialog(ProfileView.this, "Category clicked!"));
 
         add(mainPanel, BorderLayout.CENTER);
-    }
-
-    public void setEmail(String email) {
-        this.userEmail = email;
     }
 
     static class RoundBorder extends LineBorder {
