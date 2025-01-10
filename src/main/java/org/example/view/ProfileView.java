@@ -66,7 +66,10 @@ public class ProfileView extends JFrame {
             changePasswordView.display();
         });
 
-        categoryButton.addActionListener(e -> JOptionPane.showMessageDialog(ProfileView.this, "Category clicked!"));
+        categoryButton.addActionListener(e -> {
+            CategoryView categoryView = new CategoryView();
+            categoryView.display();
+        });
 
         add(mainPanel, BorderLayout.CENTER);
     }
