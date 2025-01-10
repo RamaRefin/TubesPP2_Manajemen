@@ -348,17 +348,30 @@ public class CategoryView extends JFrame {
                     .filter(item -> item.getItemName().equals(selectedCategoryName) && item.getItemType().equals("category"))
                     .findFirst()
                     .orElse(null);
+            WasteItem typeToDelete = items.stream()
+                    .filter(item -> item.getItemName().equals(selectedTypeName) && item.getItemType().equals("type") )
+                    .filter(item -> Objects.equals(item.getParentId(), categoryToDelete.getItemId()))
+                    .findFirst()
+                    .orElse(null);
 
-            if(categoryToDelete != null){
+            if (categoryToDelete != null && !selectedTypeName.equals("Tidak ada jenis sampah")) {
+                if (categoryController.deleteWasteItem(typeToDelete.getItemId())) {
+                    JOptionPane.showMessageDialog(this, "Item berhasil dihapus");
+                    loadCategoryData();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Gagal menghapus item", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }  else if (categoryToDelete != null) {
                 if (categoryController.deleteWasteItem(categoryToDelete.getItemId())) {
                     JOptionPane.showMessageDialog(this, "Item berhasil dihapus");
                     loadCategoryData();
                 } else {
                     JOptionPane.showMessageDialog(this, "Gagal menghapus item", "Error", JOptionPane.ERROR_MESSAGE);
                 }
-            } else {
+            }else{
                 JOptionPane.showMessageDialog(this, "Gagal menghapus item", "Error", JOptionPane.ERROR_MESSAGE);
             }
+
 
 
         }
