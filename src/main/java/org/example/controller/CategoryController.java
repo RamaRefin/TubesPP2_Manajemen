@@ -116,12 +116,6 @@ public class CategoryController {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);  // Start transaction
 
-            // 1. Delete all types with parent_id equal to the categoryId
-            String deleteTypesQuery = "DELETE FROM waste WHERE parent_id = ?";
-            stmt = conn.prepareStatement(deleteTypesQuery);
-            stmt.setInt(1, itemId);
-            stmt.executeUpdate();
-
             // 2. Delete the category itself
             String deleteCategoryQuery = "DELETE FROM waste WHERE item_id = ?";
             stmt = conn.prepareStatement(deleteCategoryQuery);
